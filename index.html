@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IPTV Player</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.8/shaka-player.compiled.js"></script>
+
+<style>
+html, body{
+  margin:0;
+  padding:0;
+  height:100%;
+  width:100%;
+  background:black;
+  overflow:hidden;
+}
+video{
+  width:100%;
+  height:100%;
+  object-fit: fill; /* stretch video to fill screen */
+  background:black;
+}
+
+/* TITLE OVERLAY */
+#titleOverlay{
+  position:absolute;
+  top:30px;   /* adjust vertical position */
+  left:50px;  /* adjust horizontal position */
+  background: rgba(0,0,0,0.5);
+  color:#fff;
+  font-family: Arial, sans-serif;
+  font-size:10px;  /* adjust font size */
+  padding: 10px 16px;  /* adjust padding around text */
+  border-radius: 8px;
+  z-index: 10;
+}
+
+  #secondText{
+  position:absolute;
+
+  bottom:50px;   /* adjust mo pwesto (ibaba) */
+  right:70px;     /* adjust mo pwesto (kaliwa) */
+
+
+  color:#fff;
+
+  font-family: Arial, sans-serif;
+  font-size: 24px;   /* 👉 LAKI / LIIT ng text */
+  padding: 8px 14px;
+  border-radius: 6px;
+
+  z-index:10;
+}
+
+  #logo1{
+  position:absolute;
+
+  top:50px;      /* pwesto */
+  right:70px;
+
+  width:80px;    /* laki ng logo */
+  height:auto;
+
+  z-index:10;
+  pointer-events:none;
+}
+
+#logo2{
+  position:absolute;
+
+  top:20px;      /* pwesto */
+  left:20px;
+
+  width:80px;    /* laki ng logo */
+  height:auto;
+
+  z-index:10;
+  pointer-events:none;
+}
+
+
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+
+<div id="titleOverlay"></div>
+<div id="secondText">SECOND TEXT</div>
+
+<img id="logo1" src="https://i.imgur.com/wo8vkU8.png">
+<img id="logo2" src="logo2.png">
+  
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const video = document.getElementById("video");
+  const titleOverlay = document.getElementById("titleOverlay");
+ const secondText = document.getElementById("secondText");
+ 
+  const playlist = [
+     {
+      type: "IPTV",
+      manifest: "https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg01006-abs-cbn-kapcha-dash-abscbnono/index.mpd",
+      key: "bd17afb5dc9648a39be79ee3634dd4b8:b475084a1a58857e18480e30fbb0e544",
+      title: "MPD Sample - OroPlatamata"
+    },
+     {
+      type: "MP4",
+      manifest: "https://ia600802.us.archive.org/29/items/if-only-lea-salonga-lyrics-720-p-hd/If%20Only%20-%20Lea%20Salonga%20-%20Lyrics%28720P_HD%29.ia.mp4"
+      
+    },
+    {
+      type: "MP4",
+      manifest: "https://ia600802.us.archive.org/29/items/if-only-lea-salonga-lyrics-720-p-hd/If%20Only%20-%20Lea%20Salonga%20-%20Lyrics%28720P_HD%29.ia.mp4",
+      title: "MP4 Sample - If Only"
+    }
+   
+  ];
+   secondText.textContent = "Parental Guidance";
+  
+  let currentIndex = 0;
+  shaka.polyfill.installAll();
+  let shakaPlayer = null;
+
+  async function destroyPlayers(){
+    if(shakaPlayer){
+      await shakaPlayer.destroy();
+      shakaPlayer = null;
+    }
+    video.removeAttribute("src");
+    video.load();
+  }
+
+  function updateTitle(title){
+    document.title = title; 
+    titleOverlay.textContent = title; 
+  }
+
+  async function playMP4(url, title){
+    updateTitle(title);
+    await destroyPlayers();
+    video.src = url;
+    video.load();
+    try {
+      await video.play();
+    } catch(e){
+      console.log("Autoplay with sound blocked. Tap screen to start.");
+      video.addEventListener("click", () => video.play(), { once:true });
+    }
+  }
+
+  async function playMPD(url, keyString, title){
+    updateTitle(title);
+    await destroyPlayers();
+    shakaPlayer = new shaka.Player(video);
+    if(keyString){
+      const p = keyString.split(":");
+      if(p.length === 2){
+        shakaPlayer.configure({
+          drm:{ clearKeys:{ [p[0].trim()]: p[1].trim() } }
+        });
+      }
+    }
+    try {
+      await shakaPlayer.load(url);
+      await video.play();
+    } catch(e){
+      console.log("Autoplay with sound blocked. Tap screen to start.");
+      video.addEventListener("click", () => video.play(), { once:true });
+    }
+  }
+
+  async function playCurrent(){
+    const item = playlist[currentIndex];
+    if(item.type === "MP4"){
+      playMP4(item.manifest, item.title);
+    } else if(item.type === "IPTV"){
+      playMPD(item.manifest, item.key, item.title);
+    }
+  }
+
+  video.addEventListener("ended", () => {
+    currentIndex = (currentIndex + 1) % playlist.length;
+    playCurrent();
+  });
+
+  playCurrent();
+
+  video.requestFullscreen?.();
+
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
